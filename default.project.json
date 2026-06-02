@@ -1,0 +1,24 @@
+{
+  "name": "roblox-topdown-arena",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "AfterlifeArcade": {
+        "$path": "src/ReplicatedStorage/AfterlifeArcade"
+      }
+    },
+    "ServerScriptService": {
+      "AfterlifeArcade": {
+        "$path": "src/ServerScriptService/AfterlifeArcade"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/StarterPlayer/StarterPlayerScripts"
+      }
+    },
+    "StarterGui": {
+      "$path": "src/StarterGui"
+    }
+  }
+}

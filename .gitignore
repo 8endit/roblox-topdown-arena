@@ -1,0 +1,6 @@
+node_modules/
+rojo-serve.*.log
+Rojo.rbxm
+*.rbxl.lock
+*.rbxl
+afterlife-arena-check.rbxl
