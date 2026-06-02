@@ -81,6 +81,11 @@ local function movementVector()
 	return move
 end
 
+local function currentDashCooldown()
+	local character = player.Character
+	return (character and character:GetAttribute("AfterlifeDashCooldown")) or Config.Player.DashCooldown
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then
 		return
@@ -90,7 +95,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		keysDown[input.KeyCode] = true
 		if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.LeftShift then
 			local now = os.clock()
-			if now - lastDash >= Config.Player.DashCooldown then
+			if now - lastDash >= currentDashCooldown() then
 				lastDash = now
 				local direction = movementVector()
 				if direction.Magnitude <= 0.05 then

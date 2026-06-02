@@ -5,6 +5,75 @@ local Config = require(ReplicatedStorage:WaitForChild("AfterlifeArcade"):WaitFor
 
 local PlayerService = {}
 local lastDashByPlayer = {}
+local activeFates = {}
+
+local function fateCount(fateId)
+	return activeFates[fateId] or 0
+end
+
+local function fateEffect(fateId, effectName, defaultValue)
+	local fate = Config.Fates and Config.Fates.Pool and Config.Fates.Pool[fateId]
+	local effects = fate and fate.Effects
+	local value = effects and effects[effectName]
+	if value == nil then
+		return defaultValue
+	end
+	return value
+end
+
+local function copyFates(fates)
+	local copy = {}
+	for fateId, count in pairs(fates or {}) do
+		if count > 0 then
+			copy[fateId] = count
+		end
+	end
+	return copy
+end
+
+local function calculateDashCooldown()
+	local reduction = fateCount("FleetSoul") * fateEffect("FleetSoul", "DashCooldownReduction", 0)
+	local minCooldown = fateEffect("FleetSoul", "MinDashCooldown", Config.Player.DashCooldown)
+	return math.max(minCooldown, Config.Player.DashCooldown - reduction)
+end
+
+local function calculateWalkSpeedPenalty()
+	return fateCount("HeavyHands") * fateEffect("HeavyHands", "WalkSpeedPenalty", 0)
+end
+
+local function calculateMaxHealth()
+	local penalty = fateCount("GlassFlame") * fateEffect("GlassFlame", "MaxHealthPenalty", 0)
+	local minHealth = fateEffect("GlassFlame", "MinMaxHealth", Config.Player.MaxHealth)
+	return math.max(minHealth, Config.Player.MaxHealth - penalty)
+end
+
+local function applyFatesToCharacter(character)
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	local maxHealth = calculateMaxHealth()
+	local oldMaxHealth = humanoid.MaxHealth
+	humanoid.MaxHealth = maxHealth
+	if oldMaxHealth <= 0 then
+		humanoid.Health = maxHealth
+	elseif humanoid.Health > maxHealth then
+		humanoid.Health = maxHealth
+	end
+
+	character:SetAttribute("AfterlifeDashCooldown", calculateDashCooldown())
+	character:SetAttribute("AfterlifeWalkSpeedPenalty", calculateWalkSpeedPenalty())
+	character:SetAttribute("AfterlifeMaxHealth", maxHealth)
+end
+
+local function applyFatesToAllCharacters()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Character then
+			applyFatesToCharacter(player.Character)
+		end
+	end
+end
 
 local function setupLeaderstats(player)
 	local leaderstats = player:FindFirstChild("leaderstats")
@@ -44,6 +113,10 @@ local function configureCharacter(character)
 	humanoid.AutoRotate = false
 	character:SetAttribute("AfterlifeShieldHealth", 0)
 	character:SetAttribute("AfterlifeInvulnerableUntil", 0)
+	character:SetAttribute("AfterlifeDashCooldown", Config.Player.DashCooldown)
+	character:SetAttribute("AfterlifeWalkSpeedPenalty", 0)
+	character:SetAttribute("AfterlifeMaxHealth", Config.Player.MaxHealth)
+	applyFatesToCharacter(character)
 	root.CFrame = CFrame.new(Config.Map.PlayerSpawn)
 end
 
@@ -68,11 +141,12 @@ local function dashPlayer(player, direction)
 	end
 
 	local now = os.clock()
-	if now - (lastDashByPlayer[player] or 0) < Config.Player.DashCooldown then
+	local character = player.Character
+	local cooldown = (character and character:GetAttribute("AfterlifeDashCooldown")) or Config.Player.DashCooldown
+	if now - (lastDashByPlayer[player] or 0) < cooldown then
 		return
 	end
 
-	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not humanoid or humanoid.Health <= 0 or not root then
@@ -149,6 +223,11 @@ function PlayerService.SetWaveForAll(wave)
 			waveValue.Value = wave
 		end
 	end
+end
+
+function PlayerService.ApplyRunFates(fates)
+	activeFates = copyFates(fates)
+	applyFatesToAllCharacters()
 end
 
 function PlayerService.TeleportAllToSpawn()

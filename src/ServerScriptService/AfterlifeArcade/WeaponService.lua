@@ -9,6 +9,7 @@ local WeaponService = {}
 
 local lastShotByPlayer = {}
 local playerState = {}
+local activeFates = {}
 local remotes
 local enemyService
 
@@ -25,6 +26,41 @@ local function getState(player)
 		playerState[player] = defaultState()
 	end
 	return playerState[player]
+end
+
+local function copyFates(fates)
+	local copy = {}
+	for fateId, count in pairs(fates or {}) do
+		if count > 0 then
+			copy[fateId] = count
+		end
+	end
+	return copy
+end
+
+local function fateCount(fateId)
+	return activeFates[fateId] or 0
+end
+
+local function fateEffect(fateId, effectName, defaultValue)
+	local fate = Config.Fates and Config.Fates.Pool and Config.Fates.Pool[fateId]
+	local effects = fate and fate.Effects
+	local value = effects and effects[effectName]
+	if value == nil then
+		return defaultValue
+	end
+	return value
+end
+
+local function fateDamageMultiplier()
+	local bonus = 0
+	bonus += fateCount("HeavyHands") * fateEffect("HeavyHands", "DamageMultiplierAdd", 0)
+	bonus += fateCount("GlassFlame") * fateEffect("GlassFlame", "DamageMultiplierAdd", 0)
+	return 1 + bonus
+end
+
+local function fatePierceBonus()
+	return fateCount("PiercingRite") * fateEffect("PiercingRite", "PierceBonus", 0)
 end
 
 local function weaponConfig(player)
@@ -86,10 +122,12 @@ local function refreshModifiers(player)
 	local state = getState(player)
 	local now = os.clock()
 	local speed = Config.Player.WalkSpeed
+	local penalty = character:GetAttribute("AfterlifeWalkSpeedPenalty") or 0
 	local speedBoost = state.powerups.SpeedBoost
 	if speedBoost and speedBoost > now then
 		speed += Config.Powerups.SpeedBoost.WalkSpeedBonus
 	end
+	speed = math.max(8, speed - penalty)
 
 	if humanoid.WalkSpeed ~= speed then
 		humanoid.WalkSpeed = speed
@@ -179,7 +217,7 @@ local function firePellet(player, character, origin, direction, weapon, damage)
 	local filter = { character }
 	rayParams.FilterDescendantsInstances = filter
 
-	local pierce = weapon.Pierce or 1
+	local pierce = (weapon.Pierce or 1) + fatePierceBonus()
 	local remaining = weapon.Range
 	local from = origin
 	local endPoint = origin + direction * weapon.Range
@@ -248,7 +286,7 @@ local function fireWeapon(player, targetPosition)
 	end
 
 	local baseDirection = delta.Unit
-	local damage = weapon.Damage * activeMultiplier(player, "DamageMultiplier", 1)
+	local damage = weapon.Damage * activeMultiplier(player, "DamageMultiplier", 1) * fateDamageMultiplier()
 
 	fireVolley(player, character, origin, baseDirection, weapon, damage)
 
@@ -347,6 +385,14 @@ function WeaponService.IsPowerupActive(player, powerupId)
 	end
 	local expiresAt = state.powerups[powerupId]
 	return expiresAt ~= nil and expiresAt > os.clock()
+end
+
+function WeaponService.ApplyRunFates(fates)
+	activeFates = copyFates(fates)
+	for _, player in ipairs(Players:GetPlayers()) do
+		refreshModifiers(player)
+		sendLoadout(player)
+	end
 end
 
 function WeaponService.Init(remoteFolder, enemies)

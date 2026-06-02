@@ -20,7 +20,7 @@ local panel = Instance.new("Frame")
 panel.Name = "Panel"
 panel.AnchorPoint = Vector2.new(0, 0)
 panel.Position = UDim2.fromOffset(18, 18)
-panel.Size = UDim2.fromOffset(330, 198)
+panel.Size = UDim2.fromOffset(330, 222)
 panel.BackgroundColor3 = Color3.fromRGB(18, 21, 23)
 panel.BackgroundTransparency = 0.08
 panel.BorderSizePixel = 0
@@ -63,7 +63,8 @@ local enemyLabel = makeLabel("Enemies", 86, 15, Color3.fromRGB(240, 218, 145))
 local mapLabel = makeLabel("Map", 110, 15, Color3.fromRGB(170, 206, 245))
 local weaponLabel = makeLabel("Weapon", 134, 15, Color3.fromRGB(245, 245, 245))
 local powerupLabel = makeLabel("Powerups", 158, 15, Color3.fromRGB(230, 205, 255))
-local scoreLabel = makeLabel("Score", 178, 14, Color3.fromRGB(235, 235, 235))
+local fateLabel = makeLabel("Fates", 178, 14, Color3.fromRGB(210, 180, 255))
+local scoreLabel = makeLabel("Score", 198, 14, Color3.fromRGB(235, 235, 235))
 
 local healthBack = Instance.new("Frame")
 healthBack.Name = "HealthBack"
@@ -160,6 +161,7 @@ local lastPayload = {
 	roomId = "",
 	roomType = "StartRoom",
 	roomName = "Start",
+	fates = {},
 }
 
 local lastLoadout = {
@@ -196,6 +198,13 @@ local function updateLabels()
 		table.insert(active, string.format("%s %ss", tostring(powerup.name), tostring(powerup.remaining)))
 	end
 	powerupLabel.Text = "Powerups: " .. (#active > 0 and table.concat(active, ", ") or "-")
+
+	local fates = {}
+	for _, fate in ipairs(lastPayload.fates or {}) do
+		local suffix = fate.count and fate.count > 1 and (" x" .. tostring(fate.count)) or ""
+		table.insert(fates, tostring(fate.name) .. suffix)
+	end
+	fateLabel.Text = "Fates: " .. (#fates > 0 and table.concat(fates, ", ") or "-")
 	scoreLabel.Text = string.format("Score: %s", tostring(currentScore()))
 end
 
@@ -213,6 +222,7 @@ updateHud.OnClientEvent:Connect(function(payload)
 	lastPayload.roomId = payload.roomId or lastPayload.roomId
 	lastPayload.roomType = payload.roomType or lastPayload.roomType
 	lastPayload.roomName = payload.roomName or lastPayload.roomName
+	lastPayload.fates = payload.fates or lastPayload.fates
 	updateLabels()
 end)
 
@@ -227,6 +237,7 @@ updateRun.OnClientEvent:Connect(function(payload)
 	lastPayload.roomName = payload.roomName or lastPayload.roomName
 	lastPayload.map = payload.map or lastPayload.map
 	lastPayload.status = payload.status or lastPayload.status
+	lastPayload.fates = payload.fates or lastPayload.fates
 	updateLabels()
 end)
 

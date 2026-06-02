@@ -441,24 +441,40 @@ Config.Fates = {
 			Description = "Dash cooldown down",
 			Color = Color3.fromRGB(110, 220, 255),
 			Unique = false,
+			Effects = {
+				DashCooldownReduction = 0.18,
+				MinDashCooldown = 0.55,
+			},
 		},
 		HeavyHands = {
 			DisplayName = "Heavy Hands",
 			Description = "More damage, less speed",
 			Color = Color3.fromRGB(255, 170, 90),
 			Unique = false,
+			Effects = {
+				DamageMultiplierAdd = 0.18,
+				WalkSpeedPenalty = 2,
+			},
 		},
 		GlassFlame = {
 			DisplayName = "Glass Flame",
 			Description = "More damage, lower max health",
 			Color = Color3.fromRGB(255, 92, 92),
 			Unique = false,
+			Effects = {
+				DamageMultiplierAdd = 0.28,
+				MaxHealthPenalty = 15,
+				MinMaxHealth = 45,
+			},
 		},
 		PiercingRite = {
 			DisplayName = "Piercing Rite",
 			Description = "Shots pierce one more target",
 			Color = Color3.fromRGB(170, 130, 255),
 			Unique = false,
+			Effects = {
+				PierceBonus = 1,
+			},
 		},
 	},
 }

@@ -11,6 +11,7 @@ local mapBuilder
 local playerService
 local pickupService
 local waveService
+local weaponService
 
 local currentStage = 0
 local currentRoomId = nil
@@ -37,6 +38,34 @@ local function announceAll(style, text, color)
 	local announce = remotes and remotes:FindFirstChild("Announce")
 	if announce then
 		announce:FireAllClients({style = style, text = text, color = color})
+	end
+end
+
+local function activeFatePayload()
+	local payload = {}
+	for fateId, count in pairs(runFates) do
+		local fate = Config.Fates and Config.Fates.Pool and Config.Fates.Pool[fateId]
+		if fate and count > 0 then
+			table.insert(payload, {
+				id = fateId,
+				name = fate.DisplayName or fateId,
+				count = count,
+				color = fate.Color,
+			})
+		end
+	end
+	table.sort(payload, function(a, b)
+		return a.name < b.name
+	end)
+	return payload
+end
+
+local function applyRunFates()
+	if playerService and playerService.ApplyRunFates then
+		playerService.ApplyRunFates(runFates)
+	end
+	if weaponService and weaponService.ApplyRunFates then
+		weaponService.ApplyRunFates(runFates)
 	end
 end
 
@@ -114,6 +143,7 @@ local function broadcast(status)
 		status = status,
 		map = layoutName(),
 		terminal = isTerminalRoom(room),
+		fates = activeFatePayload(),
 	}
 
 	for _, player in ipairs(Players:GetPlayers()) do
@@ -367,6 +397,7 @@ local function createFateOffer()
 
 			chosen = true
 			runFates[fateId] = (runFates[fateId] or 0) + 1
+			applyRunFates()
 			announceAll("toast", (fate.DisplayName or fateId) .. " chosen", color)
 			destroyFateOffer()
 			clearedRooms[currentRoomId] = true
@@ -484,12 +515,14 @@ function RoomService.GetState()
 	}
 end
 
-function RoomService.Init(remoteFolder, maps, players, pickups, waves)
+function RoomService.Init(remoteFolder, maps, players, pickups, waves, weapons)
 	remotes = remoteFolder
 	mapBuilder = maps
 	playerService = players
 	pickupService = pickups
 	waveService = waves
+	weaponService = weapons
+	applyRunFates()
 
 	task.spawn(function()
 		while #Players:GetPlayers() == 0 do
