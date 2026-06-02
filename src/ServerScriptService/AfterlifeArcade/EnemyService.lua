@@ -662,6 +662,16 @@ function EnemyService.FreezeAll(duration)
 	freezeUntil = math.max(freezeUntil, os.clock() + (duration or 0))
 end
 
+function EnemyService.ClearAll()
+	for model in pairs(activeEnemies) do
+		if model.Parent then
+			model:Destroy()
+		end
+	end
+	activeEnemies = {}
+	freezeUntil = 0
+end
+
 function EnemyService.Count()
 	local count = 0
 	for model in pairs(activeEnemies) do

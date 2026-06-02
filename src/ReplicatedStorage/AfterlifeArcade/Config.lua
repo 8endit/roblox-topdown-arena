@@ -142,6 +142,21 @@ Config.Player = {
 	DashGhostLifetime = 0.18,
 }
 
+Config.Run = {
+	StartLives = 3,
+	SharedLives = true,
+	RespawnDelay = 1.2,
+	RespawnIFrames = 2.0,
+	SummarySeconds = 8,
+}
+
+Config.Score = {
+	RoomClear = 50,
+	StageClear = 200,
+	BossBonus = 300,
+	TreasureDetour = 75,
+}
+
 Config.Camera = {
 	Height = 72,
 	BackOffset = 8,

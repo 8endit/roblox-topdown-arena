@@ -395,6 +395,13 @@ function WeaponService.ApplyRunFates(fates)
 	end
 end
 
+function WeaponService.ResetPlayer(player)
+	playerState[player] = defaultState()
+	lastShotByPlayer[player] = nil
+	refreshModifiers(player)
+	sendLoadout(player)
+end
+
 function WeaponService.Init(remoteFolder, enemies)
 	remotes = remoteFolder
 	enemyService = enemies

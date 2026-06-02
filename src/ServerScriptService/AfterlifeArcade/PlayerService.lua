@@ -100,6 +100,18 @@ local function setupLeaderstats(player)
 	end
 end
 
+local function resetLeaderstats(player)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	local score = leaderstats and leaderstats:FindFirstChild("Score")
+	local wave = leaderstats and leaderstats:FindFirstChild("Wave")
+	if score then
+		score.Value = 0
+	end
+	if wave then
+		wave.Value = 0
+	end
+end
+
 local function configureCharacter(character)
 	local humanoid = character:WaitForChild("Humanoid", 10)
 	local root = character:WaitForChild("HumanoidRootPart", 10)
@@ -215,6 +227,12 @@ function PlayerService.AddScore(player, amount)
 	end
 end
 
+function PlayerService.AddScoreAll(amount)
+	for _, player in ipairs(Players:GetPlayers()) do
+		PlayerService.AddScore(player, amount)
+	end
+end
+
 function PlayerService.SetWaveForAll(wave)
 	for _, player in ipairs(Players:GetPlayers()) do
 		local leaderstats = player:FindFirstChild("leaderstats")
@@ -228,6 +246,41 @@ end
 function PlayerService.ApplyRunFates(fates)
 	activeFates = copyFates(fates)
 	applyFatesToAllCharacters()
+end
+
+function PlayerService.GrantIFrames(player, seconds)
+	local character = player.Character
+	if not character then
+		return
+	end
+
+	local untilTime = os.clock() + (seconds or 0)
+	character:SetAttribute("AfterlifeInvulnerableUntil", untilTime)
+
+	local forceField = character:FindFirstChild("AfterlifeRespawnField")
+	if not forceField then
+		forceField = Instance.new("ForceField")
+		forceField.Name = "AfterlifeRespawnField"
+		forceField.Visible = false
+		forceField.Parent = character
+	end
+
+	task.delay(seconds or 0, function()
+		if forceField.Parent then
+			forceField:Destroy()
+		end
+	end)
+end
+
+function PlayerService.ResetPlayer(player, resetScore)
+	setupLeaderstats(player)
+	if resetScore then
+		resetLeaderstats(player)
+	end
+	lastDashByPlayer[player] = nil
+	if player.Character then
+		configureCharacter(player.Character)
+	end
 end
 
 function PlayerService.TeleportAllToSpawn()

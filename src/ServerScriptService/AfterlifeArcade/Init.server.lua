@@ -6,6 +6,7 @@ local EnemyService = require(serverFolder:WaitForChild("EnemyService"))
 local PickupService = require(serverFolder:WaitForChild("PickupService"))
 local PlayerService = require(serverFolder:WaitForChild("PlayerService"))
 local RoomService = require(serverFolder:WaitForChild("RoomService"))
+local RunService = require(serverFolder:WaitForChild("RunService"))
 local WaveService = require(serverFolder:WaitForChild("WaveService"))
 local WeaponService = require(serverFolder:WaitForChild("WeaponService"))
 
@@ -36,6 +37,20 @@ local function ensureRemoteFolder()
 		updateRun = Instance.new("RemoteEvent")
 		updateRun.Name = "UpdateRun"
 		updateRun.Parent = folder
+	end
+
+	local updateRunState = folder:FindFirstChild("UpdateRunState")
+	if not updateRunState then
+		updateRunState = Instance.new("RemoteEvent")
+		updateRunState.Name = "UpdateRunState"
+		updateRunState.Parent = folder
+	end
+
+	local runSummary = folder:FindFirstChild("RunSummary")
+	if not runSummary then
+		runSummary = Instance.new("RemoteEvent")
+		runSummary.Name = "RunSummary"
+		runSummary.Parent = folder
 	end
 
 	local updateLoadout = folder:FindFirstChild("UpdateLoadout")
@@ -73,4 +88,6 @@ WeaponService.Init(remotes, EnemyService)
 PickupService.Init(WeaponService, remotes)
 WaveService.Init(remotes, EnemyService, PlayerService, MapBuilder, PickupService)
 WaveService.SetRoomService(RoomService)
-RoomService.Init(remotes, MapBuilder, PlayerService, PickupService, WaveService, WeaponService)
+WaveService.SetRunService(RunService)
+RoomService.Init(remotes, MapBuilder, PlayerService, PickupService, WaveService, WeaponService, false)
+RunService.Init(remotes, RoomService, WeaponService, PlayerService, EnemyService, WaveService)

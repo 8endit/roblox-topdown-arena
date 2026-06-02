@@ -316,6 +316,23 @@ local function spawnTreasure(room)
 	pickupService.SpawnWeapon("SMG", Vector3.new(8, Config.Map.FloorY + 1, 0), "Rare")
 end
 
+local function awardRoomScore(room)
+	if not playerService or not playerService.AddScoreAll then
+		return
+	end
+
+	local typeId = roomType(room)
+	if typeId ~= "StartRoom" then
+		playerService.AddScoreAll(Config.Score.RoomClear or 0)
+	end
+	if typeId == "TreasureRoom" then
+		playerService.AddScoreAll(Config.Score.TreasureDetour or 0)
+	end
+	if isTerminalRoom(room) then
+		playerService.AddScoreAll(Config.Score.StageClear or 0)
+	end
+end
+
 local function sortedFateIds(pool)
 	local ids = {}
 	for fateId in pairs(pool or {}) do
@@ -479,6 +496,7 @@ function RoomService.LoadRoom(roomId)
 	if config.Clear == "instant" then
 		clearedRooms[roomId] = true
 		spawnTreasure(room)
+		awardRoomScore(room)
 		enterClearedRoom()
 		return
 	end
@@ -506,6 +524,39 @@ function RoomService.StartNextStage()
 	RoomService.LoadRoom(currentGraph.start or "s")
 end
 
+function RoomService.StopRun()
+	roomRunning = false
+	pendingTransition = false
+	currentGraph = nil
+	currentRoomId = nil
+	currentRoomType = "StartRoom"
+	currentStage = 0
+	clearedRooms = {}
+	clearTransitionObjects()
+	if pickupService then
+		pickupService.ClearAll()
+	end
+	broadcast("Run stopped")
+end
+
+function RoomService.ResetRun()
+	roomRunning = false
+	pendingTransition = false
+	currentStage = 0
+	currentRoomId = nil
+	currentRoomType = "StartRoom"
+	currentLayoutId = Config.MapRotation[1]
+	currentGraph = nil
+	clearedRooms = {}
+	runFates = {}
+	clearTransitionObjects()
+	if pickupService then
+		pickupService.ClearAll()
+	end
+	applyRunFates()
+	RoomService.StartNextStage()
+end
+
 function RoomService.OnRoomCleared(roomId)
 	if roomId ~= currentRoomId then
 		return
@@ -516,6 +567,7 @@ function RoomService.OnRoomCleared(roomId)
 	broadcast("Room clear")
 
 	local room = getRoom(roomId)
+	awardRoomScore(room)
 	if isTerminalRoom(room) then
 		announceAll("banner", "STAGE " .. tostring(currentStage) .. " CLEAR", Color3.fromRGB(120, 230, 200))
 		createStageTeleporter()
@@ -530,10 +582,11 @@ function RoomService.GetState()
 		roomId = currentRoomId,
 		roomType = currentRoomType,
 		layoutId = currentLayoutId,
+		fates = activeFatePayload(),
 	}
 end
 
-function RoomService.Init(remoteFolder, maps, players, pickups, waves, weapons)
+function RoomService.Init(remoteFolder, maps, players, pickups, waves, weapons, autoStart)
 	remotes = remoteFolder
 	mapBuilder = maps
 	playerService = players
@@ -542,13 +595,15 @@ function RoomService.Init(remoteFolder, maps, players, pickups, waves, weapons)
 	weaponService = weapons
 	applyRunFates()
 
-	task.spawn(function()
-		while #Players:GetPlayers() == 0 do
-			broadcast("Waiting for players")
-			task.wait(1)
-		end
-		RoomService.StartNextStage()
-	end)
+	if autoStart ~= false then
+		task.spawn(function()
+			while #Players:GetPlayers() == 0 do
+				broadcast("Waiting for players")
+				task.wait(1)
+			end
+			RoomService.StartNextStage()
+		end)
+	end
 end
 
 return RoomService

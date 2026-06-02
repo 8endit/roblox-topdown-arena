@@ -21,8 +21,10 @@ local enemyService
 local playerService
 local pickupService
 local roomService
+local runService
 local activeFates = {}
 local stormBursting = false
+local roomGeneration = 0
 
 local function getSpawnParts()
 	local map = Workspace:WaitForChild(Config.Map.Name)
@@ -208,6 +210,7 @@ local function buildEnemyQueue(stage, roomConfig)
 end
 
 local function runRoom(stage, roomId, room, roomConfig, layoutId)
+	local generation = roomGeneration
 	currentStage = stage
 	currentRoomId = roomId
 	currentRoomType = room.type or "CombatRoom"
@@ -230,6 +233,9 @@ local function runRoom(stage, roomId, room, roomConfig, layoutId)
 
 	local spawns = getSpawnParts()
 	for _, enemyTypeId in ipairs(queue) do
+		if generation ~= roomGeneration then
+			return
+		end
 		if #spawns > 0 then
 			enemyService.Spawn(chooseSpawn(spawns), stage, enemyTypeId)
 			totalSpawnedThisRoom += 1
@@ -242,9 +248,13 @@ local function runRoom(stage, roomId, room, roomConfig, layoutId)
 	statusText = "Clear the room"
 	broadcast()
 
-	while enemyService.Count() > 0 do
+	while generation == roomGeneration and enemyService.Count() > 0 do
 		broadcast()
 		task.wait(0.75)
+	end
+
+	if generation ~= roomGeneration then
+		return
 	end
 
 	statusText = "Room clear"
@@ -255,6 +265,7 @@ local function runRoom(stage, roomId, room, roomConfig, layoutId)
 end
 
 function WaveService.PlayRoom(stage, roomId, room, roomConfig, layoutId)
+	roomGeneration += 1
 	task.spawn(function()
 		runRoom(stage, roomId, room, roomConfig, layoutId)
 	end)
@@ -264,8 +275,21 @@ function WaveService.SetRoomService(service)
 	roomService = service
 end
 
+function WaveService.SetRunService(service)
+	runService = service
+end
+
 function WaveService.ApplyRunFates(fates)
 	activeFates = copyFates(fates)
+end
+
+function WaveService.ResetRun()
+	roomGeneration += 1
+	totalSpawnedThisRoom = 0
+	targetCountThisRoom = 0
+	spawning = false
+	statusText = "Preparing"
+	broadcast()
 end
 
 function WaveService.Init(remoteFolder, enemies, players, maps, pickups)
@@ -275,11 +299,15 @@ function WaveService.Init(remoteFolder, enemies, players, maps, pickups)
 	pickupService = pickups
 
 	enemyService.SetEnemyDiedCallback(function(player, enemyTypeId, position, stage, score, dropChance)
+		if runService and runService.RegisterKill then
+			runService.RegisterKill(player, enemyTypeId)
+		end
 		playerService.AddScore(player, score or Config.Rewards.ScorePerEnemy)
 		if pickupService then
 			pickupService.TryDropForEnemy(enemyTypeId, position, stage, dropChance)
 		end
 		if Config.EnemyTypes[enemyTypeId] and Config.EnemyTypes[enemyTypeId].Boss then
+			playerService.AddScore(player, Config.Score.BossBonus or 0)
 			announceAll("banner", "BOSS DOWN", Color3.fromRGB(120, 230, 200))
 		end
 		tryStormVein(player, position)

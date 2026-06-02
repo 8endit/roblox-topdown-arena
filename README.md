@@ -25,6 +25,8 @@ Ein kleiner Roblox-Prototyp fuer ein eigenes Top-Down-Zombie-Arena-Spiel.
 - FateRoom-v1: Fate-Raeume zeigen drei zufaellige Auswahl-Saeulen. Eine Wahl cleared den Room, oeffnet das Vorwaerts-Gate und aktiviert einen Run-Fate.
 - Erste echte Fate-Effekte: Fleet Soul senkt Dash-Cooldown, Heavy Hands gibt Schaden gegen Speed, Glass Flame gibt Schaden gegen Max-HP, Piercing Rite erhoeht Pierce, Storm Vein kann bei Kills einen AoE-Burst ausloesen.
 - Fate-Stacks haben Caps, damit Schaden, Dash und Pierce nicht unbegrenzt snowballen.
+- Run-System-v1: gemeinsamer Lebens-Pool, Tod kostet ein Leben, Game Over stoppt den Run, zeigt Summary und startet nach kurzer Pause neu.
+- Score-Boni: Room-Clear, Treasure-Detour, Stage-Clear und Boss-Kill geben zusaetzliche Punkte.
 
 ## Mit Rojo starten
 
@@ -80,12 +82,15 @@ Kopiere jeweils den Inhalt aus `src`.
 - Shield absorbiert Schaden als Shield-Health, statt komplett unverwundbar zu machen.
 - Loot zeigt die Seltenheit per Farbe, Groesse und Aura; Boss-Drops sind garantiert Rare oder Epic.
 - Das HUD zeigt Stage, Room, Gegner, Map, Waffe, Powerups, Score und Status, dazu Banner und Pickup-Toasts.
+- Das HUD zeigt Lives und Kills; bei Game Over erscheint eine Run-Summary mit Stage, Score, Kills, Zeit und Fates.
+- Score steigt durch Gegner, Room-Clears, Treasure-Detours, Stage-Clears und Boss-Kills.
 
 ## Bekannte Grenzen
 
 - Ich habe die Dateien lokal statisch validiert, aber nicht in Roblox Studio live getestet.
-- Fate-Effekte sind v1 und run-scoped im Server-State; es gibt noch keine Persistenz und keinen Run-Reset-/Game-Over-Service.
+- Fate-Effekte sind v1 und run-scoped im Server-State; es gibt noch keine Persistenz.
 - Storm Vein ist bewusst gegen rekursive Kettenreaktionen begrenzt: AoE-Kills loesen keinen weiteren Storm-Vein-Burst aus.
+- Run-System ist v1: gemeinsamer Lebens-Pool ja, aber noch kein Downed-/Revive-System und keine DataStore-Bestwerte.
 - Gegner sind bewusst einfache Parts statt fertiger Rigs, damit der Prototyp klein und kontrollierbar bleibt.
 - Mobile/Controller-Steuerung ist noch nicht ausgebaut.
 - Gegner verwenden noch direkte Zielbewegung statt Pathfinding, koennen also durch Deckung laufen.

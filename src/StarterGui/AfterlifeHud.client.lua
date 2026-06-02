@@ -7,6 +7,8 @@ local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("AfterlifeArcadeRemotes")
 local updateHud = remotes:WaitForChild("UpdateHud")
 local updateRun = remotes:WaitForChild("UpdateRun")
+local updateRunState = remotes:WaitForChild("UpdateRunState")
+local runSummary = remotes:WaitForChild("RunSummary")
 local updateLoadout = remotes:WaitForChild("UpdateLoadout")
 local announce = remotes:WaitForChild("Announce")
 
@@ -20,7 +22,7 @@ local panel = Instance.new("Frame")
 panel.Name = "Panel"
 panel.AnchorPoint = Vector2.new(0, 0)
 panel.Position = UDim2.fromOffset(18, 18)
-panel.Size = UDim2.fromOffset(330, 222)
+panel.Size = UDim2.fromOffset(330, 246)
 panel.BackgroundColor3 = Color3.fromRGB(18, 21, 23)
 panel.BackgroundTransparency = 0.08
 panel.BorderSizePixel = 0
@@ -64,7 +66,8 @@ local mapLabel = makeLabel("Map", 110, 15, Color3.fromRGB(170, 206, 245))
 local weaponLabel = makeLabel("Weapon", 134, 15, Color3.fromRGB(245, 245, 245))
 local powerupLabel = makeLabel("Powerups", 158, 15, Color3.fromRGB(230, 205, 255))
 local fateLabel = makeLabel("Fates", 178, 14, Color3.fromRGB(210, 180, 255))
-local scoreLabel = makeLabel("Score", 198, 14, Color3.fromRGB(235, 235, 235))
+local livesLabel = makeLabel("Lives", 198, 14, Color3.fromRGB(255, 196, 120))
+local scoreLabel = makeLabel("Score", 218, 14, Color3.fromRGB(235, 235, 235))
 
 local healthBack = Instance.new("Frame")
 healthBack.Name = "HealthBack"
@@ -119,6 +122,27 @@ toast.TextTransparency = 1
 toast.Text = ""
 toast.Parent = gui
 
+local summary = Instance.new("TextLabel")
+summary.Name = "RunSummary"
+summary.AnchorPoint = Vector2.new(0.5, 0.5)
+summary.Position = UDim2.fromScale(0.5, 0.5)
+summary.Size = UDim2.fromOffset(560, 220)
+summary.BackgroundColor3 = Color3.fromRGB(12, 14, 16)
+summary.BackgroundTransparency = 0.12
+summary.BorderSizePixel = 0
+summary.Font = Enum.Font.GothamBold
+summary.TextSize = 24
+summary.TextColor3 = Color3.fromRGB(235, 245, 242)
+summary.TextStrokeTransparency = 0.5
+summary.TextWrapped = true
+summary.TextTransparency = 1
+summary.Visible = false
+summary.Parent = gui
+
+local summaryCorner = Instance.new("UICorner")
+summaryCorner.CornerRadius = UDim.new(0, 8)
+summaryCorner.Parent = summary
+
 local bannerToken = 0
 local function showBanner(text, color)
 	bannerToken += 1
@@ -164,6 +188,12 @@ local lastPayload = {
 	fates = {},
 }
 
+local lastRunState = {
+	state = "WAITING",
+	lives = 0,
+	kills = 0,
+}
+
 local lastLoadout = {
 	weaponName = "Pistol",
 	weaponRemaining = 0,
@@ -205,6 +235,11 @@ local function updateLabels()
 		table.insert(fates, tostring(fate.name) .. suffix)
 	end
 	fateLabel.Text = "Fates: " .. (#fates > 0 and table.concat(fates, ", ") or "-")
+	livesLabel.Text = string.format(
+		"Lives: %s  |  Kills: %s",
+		tostring(lastRunState.lives),
+		tostring(lastRunState.kills)
+	)
 	scoreLabel.Text = string.format("Score: %s", tostring(currentScore()))
 end
 
@@ -239,6 +274,42 @@ updateRun.OnClientEvent:Connect(function(payload)
 	lastPayload.status = payload.status or lastPayload.status
 	lastPayload.fates = payload.fates or lastPayload.fates
 	updateLabels()
+end)
+
+updateRunState.OnClientEvent:Connect(function(payload)
+	if typeof(payload) ~= "table" then
+		return
+	end
+
+	lastRunState.state = payload.state or lastRunState.state
+	lastRunState.lives = payload.lives or lastRunState.lives
+	lastRunState.kills = payload.kills or lastRunState.kills
+	updateLabels()
+end)
+
+runSummary.OnClientEvent:Connect(function(payload)
+	if typeof(payload) ~= "table" then
+		return
+	end
+
+	local fates = payload.fates or {}
+	local fateText = #fates > 0 and table.concat(fates, ", ") or "-"
+	summary.Text = string.format(
+		"GAME OVER\nStage %s\nScore %s\nKills %s\nTime %ss\nFates: %s",
+		tostring(payload.stage or 0),
+		tostring(payload.score or 0),
+		tostring(payload.kills or 0),
+		tostring(payload.timeSeconds or 0),
+		fateText
+	)
+	summary.Visible = true
+	summary.TextTransparency = 0
+	task.delay(payload.summarySeconds or 8, function()
+		TweenService:Create(summary, TweenInfo.new(0.45), {TextTransparency = 1}):Play()
+		task.delay(0.45, function()
+			summary.Visible = false
+		end)
+	end)
 end)
 
 updateLoadout.OnClientEvent:Connect(function(payload)
