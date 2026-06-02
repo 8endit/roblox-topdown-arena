@@ -38,6 +38,78 @@ Konkrete Aenderungen am aktuellen RoomService (fuer Codex):
 
 ---
 
+## Aktualisierung 3: Codex-Pass nach Builder-Templates
+
+Umgesetzt nach Aktualisierung 2:
+- `MaxStacks` ist im Fate-Pool aktiv und `RoomService.availableFateIds()` filtert volle Fates aus
+  den Angeboten. Caps: FleetSoul 3, HeavyHands 3, GlassFlame 2, PiercingRite 2, StormVein 3.
+- `StormVein` ist als fuenfter Fate live. Effekt: Kill-Chance auf Radius-Schaden mit kurzem
+  Neon-Puls. AoE-Kills loesen bewusst keinen weiteren StormVein-Burst aus, damit RushRooms nicht
+  unkontrolliert kaskadieren.
+- `WaveService.ApplyRunFates()` liest den Run-Fate-State aus RoomService und wertet StormVein im
+  Enemy-Died-Callback aus.
+- `EnemyService.RadialDamage()` ist der neue Hook fuer lokale AoE-Effekte.
+- Stage 8+ rotiert durch Templates 4-7 (`RepeatFromStage`, `RepeatToStage`) statt wieder fest auf
+  Template 3 zurueckzufallen.
+
+Weiter offen:
+- EchoMagnet: PickupService-Hook.
+- LastWard: Health-Watch/Shield-Cooldown im PlayerService.
+- SecondBreath: braucht zuerst Lebenssystem, Tod/Game-Over und Stage-Reset.
+
+---
+
+## Aktualisierung 2: Stand nach Commit efde9e2 (Builder-Sync)
+
+RoomService ist gebaut und gepusht. Abgleich Plan gegen Code plus naechste Schritte.
+
+Umgesetzt (Codex): Fork-Merge-RoomService genau nach Spec (Templates 1-3, `node.next`
+deterministisch, vorwaerts-only, Detours mergen vorwaerts), Gates eingefaerbt nach Ziel-Room-Typ,
+StageTeleporter nur an Terminal-Rooms, FateRoom-Auswahl (3 Saeulen), vier Fate-Effekte live,
+faire Spawns (`Config.Spawning`), Gegner-Trennung (`Config.EnemyMovement`), Shield-Health.
+
+Gerade ergaenzt (Builder, nur Config-Daten): `Config.Stages.Templates[4..7]`. Eskalierende
+Fork-Merge-Graphen, Boss-Kadenz auf Stage 3/5/7, Stage 4 und 6 als laengere Atempausen-Stages
+mit ExitRoom-Terminal. Stage 8+ faellt weiter auf Template[3] zurueck (`resolveStageTemplate`),
+bis prozedurale Generierung kommt.
+
+Echtes Fate-Schema (gilt, ersetzt die Werte in Abschnitt 10.3): additive Stacks, nicht
+multiplikativ. WeaponService liest `fateCount(id) * Effect`.
+- FleetSoul: `DashCooldownReduction` (pro Stack, Sekunden), `MinDashCooldown` (Floor).
+- HeavyHands: `DamageMultiplierAdd` (pro Stack), `WalkSpeedPenalty` (flat).
+- GlassFlame: `DamageMultiplierAdd`, `MaxHealthPenalty`, `MinMaxHealth` (Floor).
+- PiercingRite: `PierceBonus`.
+Neue Fates muessen diesem additiven Muster folgen.
+
+Balance-Flag (wichtig): alle vier Fates sind `Unique = false`, und `availableFateIds()`
+schliesst nur bei `Unique == true` aus. Es gibt also KEINE Obergrenze, Schaden/Pierce stapeln
+unbegrenzt. Vorschlag: `MaxStacks` pro Fate plus eine Zeile in `availableFateIds`: ausschliessen
+wenn `(runFates[id] or 0) >= (fate.MaxStacks or math.huge)`. Empfohlene Caps: FleetSoul 3,
+HeavyHands 3, GlassFlame 2, PiercingRite 2.
+
+Naechste 4 Fates (Spec fuer Codex), gleiches additive Muster, je mit fehlendem Service-Hook:
+
+| Fate         | Effects-Keys (Vorschlag)                              | Fehlender Service-Hook                                                        |
+|--------------|-------------------------------------------------------|------------------------------------------------------------------------------|
+| EchoMagnet   | `PassiveMagnetRange`, `PassiveMagnetSpeed`            | PickupService: dauerhafter schwacher Pull (liest runFates), wie Magnet aber permanent klein |
+| LastWard     | `LowHealthPct`, `ShieldCooldown`, `WardHealth`        | PlayerService: Health-Watch, bei Unterschreiten Shield (WeaponService.Shield) mit Cooldown  |
+| StormVein    | `OnKillAoeChance`, `OnKillAoeRadius`, `OnKillAoeDamage`| EnemyService: beim Kill Chance auf lokalen AoE (NukeDamage-artig im Radius)                   |
+| SecondBreath | `RevivesPerStage`, `ReviveNukeDamage`                 | Run-/Lebens-Lebenszyklus (Phase 1): bei Tod Auto-Revive plus Screen-Clear, Reset pro Stage   |
+
+EchoMagnet, LastWard und StormVein gehen ohne Lebenssystem. SecondBreath braucht erst den
+Run-/Lebens-Lebenszyklus (Phase 1, Tod/Game-Over).
+
+Korrekturen am Plan:
+- Schwierigkeit skaliert bereits ueber die Stage-Zahl (WaveService nutzt `stage` als Wave fuer
+  Budget und Enemy-HP/Speed). `Config.Stages.Scaling` ist nicht noetig und wird nicht gelesen.
+- `Config.Biomes`/Archetyp-Tags sind nicht implementiert; Rooms ziehen aus
+  `Config.Rooms[type].Layouts` (explizite Liste). Das reicht vorerst.
+- `TreasureRoom.PrePlacedLoot` ist in `RoomService.spawnTreasure` aktuell hartkodiert (immer
+  Rare Medkit plus Rare SMG). Fuer datengetriebenes Treasure braeuchte spawnTreasure einen
+  kleinen Umbau; sonst wirken die PrePlacedLoot-Felder nicht.
+
+---
+
 ## 1. Vokabular und Service-Schnitt
 
 | Begriff         | Bedeutung                                                        |

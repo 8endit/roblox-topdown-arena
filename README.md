@@ -23,7 +23,8 @@ Ein kleiner Roblox-Prototyp fuer ein eigenes Top-Down-Zombie-Arena-Spiel.
 - Gamefeel-Pass: Dash per `Space` oder `LeftShift`, faire Spawns weg vom Spieler, leichte Gegner-Trennung und Shield als echte Shield-Health statt Voll-Unverwundbarkeit.
 - Room/Stage-Pass: Stages bestehen aus vorwaerts gerichteten Fork-Merge-Rooms. Nach normalen Rooms oeffnen genau die deklarierten Gates; nur terminale Rooms spawnen den Stage-Teleporter.
 - FateRoom-v1: Fate-Raeume zeigen drei zufaellige Auswahl-Saeulen. Eine Wahl cleared den Room, oeffnet das Vorwaerts-Gate und aktiviert einen Run-Fate.
-- Erste echte Fate-Effekte: Fleet Soul senkt Dash-Cooldown, Heavy Hands gibt Schaden gegen Speed, Glass Flame gibt Schaden gegen Max-HP, Piercing Rite erhoeht Pierce.
+- Erste echte Fate-Effekte: Fleet Soul senkt Dash-Cooldown, Heavy Hands gibt Schaden gegen Speed, Glass Flame gibt Schaden gegen Max-HP, Piercing Rite erhoeht Pierce, Storm Vein kann bei Kills einen AoE-Burst ausloesen.
+- Fate-Stacks haben Caps, damit Schaden, Dash und Pierce nicht unbegrenzt snowballen.
 
 ## Mit Rojo starten
 
@@ -72,6 +73,7 @@ Kopiere jeweils den Inhalt aus `src`.
 - Aktive Fates werden im HUD angezeigt und wirken serverseitig auf Dash, Schaden, Pierce, Speed oder MaxHealth.
 - Terminale Exit-/Boss-Rooms spawnen nach dem Clear den Stage-Teleporter.
 - Stage 3 ist aktuell das erste Boss-Stage-Template.
+- Stage 4-7 haben eigene Fork-Merge-Templates; Stage 8+ rotiert aktuell durch 4-7.
 - Gegner laufen zum naechsten Spieler, greifen an, explodieren mit Warnphase oder kiten und laden Fernangriffe sichtbar auf.
 - Waffen-Drops koennen aufgehoben und zeitlich begrenzt genutzt werden (Pistol, SMG, Shotgun, Rifle, Burst Rifle, Beam).
 - Powerups aktivieren Heal, Damage Boost, Rapid Fire, Speed Boost, Shield, Nuke, Freeze oder Magnet.
@@ -83,6 +85,7 @@ Kopiere jeweils den Inhalt aus `src`.
 
 - Ich habe die Dateien lokal statisch validiert, aber nicht in Roblox Studio live getestet.
 - Fate-Effekte sind v1 und run-scoped im Server-State; es gibt noch keine Persistenz und keinen Run-Reset-/Game-Over-Service.
+- Storm Vein ist bewusst gegen rekursive Kettenreaktionen begrenzt: AoE-Kills loesen keinen weiteren Storm-Vein-Burst aus.
 - Gegner sind bewusst einfache Parts statt fertiger Rigs, damit der Prototyp klein und kontrollierbar bleibt.
 - Mobile/Controller-Steuerung ist noch nicht ausgebaut.
 - Gegner verwenden noch direkte Zielbewegung statt Pathfinding, koennen also durch Deckung laufen.

@@ -631,6 +631,33 @@ function EnemyService.NukeDamage(amount, player)
 	return destroyed
 end
 
+function EnemyService.RadialDamage(position, radius, amount, player, color)
+	if typeof(position) ~= "Vector3" or radius <= 0 or amount <= 0 then
+		return 0
+	end
+
+	createPulse(position, radius, color or Color3.fromRGB(112, 206, 255))
+
+	local destroyed = 0
+	local targets = {}
+	for model in pairs(activeEnemies) do
+		if model.Parent and model.PrimaryPart then
+			local distance = (model.PrimaryPart.Position - position).Magnitude
+			if distance <= radius then
+				table.insert(targets, model)
+			end
+		end
+	end
+
+	for _, model in ipairs(targets) do
+		if EnemyService.Damage(model, amount, player) then
+			destroyed += 1
+		end
+	end
+
+	return destroyed
+end
+
 function EnemyService.FreezeAll(duration)
 	freezeUntil = math.max(freezeUntil, os.clock() + (duration or 0))
 end

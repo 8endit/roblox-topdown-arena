@@ -21,6 +21,8 @@ local enemyService
 local playerService
 local pickupService
 local roomService
+local activeFates = {}
+local stormBursting = false
 
 local function getSpawnParts()
 	local map = Workspace:WaitForChild(Config.Map.Name)
@@ -51,6 +53,51 @@ local function announceAll(style, text, color)
 	if announce then
 		announce:FireAllClients({style = style, text = text, color = color})
 	end
+end
+
+local function copyFates(fates)
+	local copy = {}
+	for fateId, count in pairs(fates or {}) do
+		if count > 0 then
+			copy[fateId] = count
+		end
+	end
+	return copy
+end
+
+local function fateCount(fateId)
+	return activeFates[fateId] or 0
+end
+
+local function fateEffect(fateId, effectName, defaultValue)
+	local fate = Config.Fates and Config.Fates.Pool and Config.Fates.Pool[fateId]
+	local effects = fate and fate.Effects
+	local value = effects and effects[effectName]
+	if value == nil then
+		return defaultValue
+	end
+	return value
+end
+
+local function tryStormVein(player, position)
+	local stacks = fateCount("StormVein")
+	if stacks <= 0 or stormBursting then
+		return
+	end
+
+	local chance = math.clamp(stacks * fateEffect("StormVein", "OnKillAoeChance", 0), 0, 0.65)
+	if math.random() >= chance then
+		return
+	end
+
+	local radius = fateEffect("StormVein", "OnKillAoeRadius", 0)
+	local damage = fateEffect("StormVein", "OnKillAoeDamage", 0)
+	local color = Config.Fates.Pool.StormVein.Color
+
+	stormBursting = true
+	enemyService.RadialDamage(position, radius, damage, player, color)
+	stormBursting = false
+	announceAll("toast", "Storm Vein", color)
 end
 
 local function chooseSpawn(spawns)
@@ -217,6 +264,10 @@ function WaveService.SetRoomService(service)
 	roomService = service
 end
 
+function WaveService.ApplyRunFates(fates)
+	activeFates = copyFates(fates)
+end
+
 function WaveService.Init(remoteFolder, enemies, players, maps, pickups)
 	remotes = remoteFolder
 	enemyService = enemies
@@ -231,6 +282,7 @@ function WaveService.Init(remoteFolder, enemies, players, maps, pickups)
 		if Config.EnemyTypes[enemyTypeId] and Config.EnemyTypes[enemyTypeId].Boss then
 			announceAll("banner", "BOSS DOWN", Color3.fromRGB(120, 230, 200))
 		end
+		tryStormVein(player, position)
 		broadcast()
 	end)
 end

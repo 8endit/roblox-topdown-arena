@@ -394,6 +394,8 @@ Config.Rooms = {
 
 Config.Stages = {
 	StartDelay = 3,
+	RepeatFromStage = 4,
+	RepeatToStage = 7,
 	Templates = {
 		[1] = {
 			start = "s",
@@ -428,6 +430,66 @@ Config.Stages = {
 				b = {type = "BossRoom", next = {}, terminal = true},
 			},
 		},
+		-- Stage 4: Atempause-Stage (ExitRoom-Terminal), laenger, Fate + Treasure als Detours.
+		[4] = {
+			start = "s",
+			nodes = {
+				s = {type = "StartRoom", next = {c1 = "E"}},
+				c1 = {type = "CombatRoom", next = {c2 = "E", f = "N"}},
+				f = {type = "FateRoom", next = {c2 = "E"}},
+				c2 = {type = "CombatRoom", next = {r = "E"}},
+				r = {type = "RushRoom", next = {c3 = "E", t = "S"}},
+				t = {type = "TreasureRoom", next = {c3 = "E"}},
+				c3 = {type = "CombatRoom", next = {x = "E"}},
+				x = {type = "ExitRoom", next = {}, terminal = true},
+			},
+		},
+		-- Stage 5: Boss-Stage, zwei Rush-Spitzen vor dem Boss.
+		[5] = {
+			start = "s",
+			nodes = {
+				s = {type = "StartRoom", next = {c1 = "E"}},
+				c1 = {type = "CombatRoom", next = {r1 = "E", f = "N"}},
+				f = {type = "FateRoom", next = {r1 = "E"}},
+				r1 = {type = "RushRoom", next = {c2 = "E"}},
+				c2 = {type = "CombatRoom", next = {r2 = "E", t = "S"}},
+				t = {type = "TreasureRoom", next = {r2 = "E"}},
+				r2 = {type = "RushRoom", next = {b = "E"}},
+				b = {type = "BossRoom", next = {}, terminal = true},
+			},
+		},
+		-- Stage 6: Atempause-Stage, sieben Hauptraeume, drei Detours (Fate + 2 Treasure).
+		[6] = {
+			start = "s",
+			nodes = {
+				s = {type = "StartRoom", next = {c1 = "E"}},
+				c1 = {type = "CombatRoom", next = {c2 = "E", f = "N"}},
+				f = {type = "FateRoom", next = {c2 = "E"}},
+				c2 = {type = "CombatRoom", next = {r1 = "E", t1 = "S"}},
+				t1 = {type = "TreasureRoom", next = {r1 = "E"}},
+				r1 = {type = "RushRoom", next = {c3 = "E"}},
+				c3 = {type = "CombatRoom", next = {r2 = "E", t2 = "N"}},
+				t2 = {type = "TreasureRoom", next = {r2 = "E"}},
+				r2 = {type = "RushRoom", next = {x = "E"}},
+				x = {type = "ExitRoom", next = {}, terminal = true},
+			},
+		},
+		-- Stage 7: harte Boss-Stage, zwei Fate-Detours fuer Build-Power vor dem Boss.
+		[7] = {
+			start = "s",
+			nodes = {
+				s = {type = "StartRoom", next = {c1 = "E"}},
+				c1 = {type = "CombatRoom", next = {r1 = "E", f1 = "N"}},
+				f1 = {type = "FateRoom", next = {r1 = "E"}},
+				r1 = {type = "RushRoom", next = {c2 = "E"}},
+				c2 = {type = "CombatRoom", next = {r2 = "E", t = "S"}},
+				t = {type = "TreasureRoom", next = {r2 = "E"}},
+				r2 = {type = "RushRoom", next = {c3 = "E"}},
+				c3 = {type = "CombatRoom", next = {b = "E", f2 = "N"}},
+				f2 = {type = "FateRoom", next = {b = "E"}},
+				b = {type = "BossRoom", next = {}, terminal = true},
+			},
+		},
 	},
 }
 
@@ -441,6 +503,7 @@ Config.Fates = {
 			Description = "Dash cooldown down",
 			Color = Color3.fromRGB(110, 220, 255),
 			Unique = false,
+			MaxStacks = 3,
 			Effects = {
 				DashCooldownReduction = 0.18,
 				MinDashCooldown = 0.55,
@@ -451,6 +514,7 @@ Config.Fates = {
 			Description = "More damage, less speed",
 			Color = Color3.fromRGB(255, 170, 90),
 			Unique = false,
+			MaxStacks = 3,
 			Effects = {
 				DamageMultiplierAdd = 0.18,
 				WalkSpeedPenalty = 2,
@@ -461,6 +525,7 @@ Config.Fates = {
 			Description = "More damage, lower max health",
 			Color = Color3.fromRGB(255, 92, 92),
 			Unique = false,
+			MaxStacks = 2,
 			Effects = {
 				DamageMultiplierAdd = 0.28,
 				MaxHealthPenalty = 15,
@@ -472,8 +537,21 @@ Config.Fates = {
 			Description = "Shots pierce one more target",
 			Color = Color3.fromRGB(170, 130, 255),
 			Unique = false,
+			MaxStacks = 2,
 			Effects = {
 				PierceBonus = 1,
+			},
+		},
+		StormVein = {
+			DisplayName = "Storm Vein",
+			Description = "Kills may burst nearby enemies",
+			Color = Color3.fromRGB(112, 206, 255),
+			Unique = false,
+			MaxStacks = 3,
+			Effects = {
+				OnKillAoeChance = 0.12,
+				OnKillAoeRadius = 17,
+				OnKillAoeDamage = 70,
 			},
 		},
 	},

@@ -67,6 +67,9 @@ local function applyRunFates()
 	if weaponService and weaponService.ApplyRunFates then
 		weaponService.ApplyRunFates(runFates)
 	end
+	if waveService and waveService.ApplyRunFates then
+		waveService.ApplyRunFates(runFates)
+	end
 end
 
 local function getRoom(roomId)
@@ -327,7 +330,9 @@ local function availableFateIds()
 	local pool = Config.Fates and Config.Fates.Pool or {}
 	for _, fateId in ipairs(sortedFateIds(pool)) do
 		local fate = pool[fateId]
-		if fate and not (fate.Unique and runFates[fateId]) then
+		local owned = runFates[fateId] or 0
+		local maxStacks = fate and fate.MaxStacks or math.huge
+		if fate and owned < maxStacks and not (fate.Unique and owned > 0) then
 			table.insert(ids, fateId)
 		end
 	end
@@ -407,7 +412,20 @@ local function createFateOffer()
 end
 
 local function resolveStageTemplate(stage)
-	return Config.Stages.Templates[stage] or Config.Stages.Templates[3] or Config.Stages.Templates[1]
+	local templates = Config.Stages.Templates
+	if templates[stage] then
+		return templates[stage]
+	end
+
+	local repeatFrom = Config.Stages.RepeatFromStage or 4
+	local repeatTo = Config.Stages.RepeatToStage or 7
+	if stage > repeatTo and templates[repeatFrom] and templates[repeatTo] then
+		local span = repeatTo - repeatFrom + 1
+		local repeatedStage = repeatFrom + ((stage - repeatFrom) % span)
+		return templates[repeatedStage]
+	end
+
+	return templates[3] or templates[1]
 end
 
 enterClearedRoom = function()
